@@ -1,0 +1,49 @@
+version: '3'
+services:
+  nginx:
+    container_name: nginx
+    build: ./docker/nginx    
+    restart: always
+    ports:
+      - 80:80
+    volumes:
+      - ./app:/var/www
+    working_dir: /etc/nginx
+    links:
+      - python
+  python:
+    container_name: python
+    build: ./docker/python
+    restart: always
+    volumes:
+      - ./app:/var/www
+    working_dir: /var/www
+    depends_on:
+      mysql:
+        condition: service_healthy
+  mysql:
+    build: docker/mysql
+    restart: always
+    container_name: mysql
+    ports:
+      - 3306:3306
+    volumes:
+      - data-volume:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=password
+      - MYSQL_DATABASE=django
+      - TZ=UTC
+    healthcheck:
+      test: "exit 0"
+  redis:
+    container_name: redis
+    build: docker/redis
+    restart: always
+    volumes:
+      - redis-volume:/data                # 通过挂载给redis数据备份
+    ports:
+      - "6379:6379"
+
+volumes:
+  data-volume:
+  redis-volume:      # 定义数据卷同步容器内redis数据
